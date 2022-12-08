@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "pipe.h": "c",
+        "glut.h": "c"
+    }
+}
