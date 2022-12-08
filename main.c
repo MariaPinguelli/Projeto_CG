@@ -9,12 +9,12 @@
 // Variáveis para criação do fundo
 int altura = 800, largura = 800;
 
-void background()
-{
-    int width, height, channels;
-    unsigned char *img = stbi_load("./images/background.png", &width, &height, &channels, 0);
-     stbi_write_jpg("./images/background.png", width, height, channels, img, 100);
-}
+// void background()
+// {
+//     int width, height, channels;
+//     unsigned char *img = stbi_load("./images/background.png", &width, &height, &channels, 0);
+//      stbi_write_jpg("./images/background.png", width, height, channels, img, 100);
+// }
 
 void display(void)
 {
@@ -24,7 +24,7 @@ void display(void)
 void setup()
 {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    background();
+    // background();
 }
 
 int main(int argc, char **argv)
