@@ -2,151 +2,101 @@
 #include <math.h>
 #include <stdio.h>
 
-
-#define WIDTH 600
-#define HEIGHT 600
-#define POS_X 350
-#define POS_Y 60
-#define PI 3.141592653
 #define MAX 24
-#define ACCELERATION_MIN 0.021f
-#define ACCELERATION_MAX 0.799f
-#define CAMERA_MIN 24.0f
-#define CAMERA_MAX 36.0f
-#define FRICTION_GROUND 0.98f
-#define FRICTION_WALL 0.6f
+#define FRICCAO_PAREDE 0.6f
 
-//gcc main.c -o main -lglut -lGLU -lGL -lm
+// gcc main.c -o main -lglut -lGLU -lGL -lm
 
-GLfloat BGColor[] = { 0.420f, 0.604f, 0.922f, 1.0f };
-GLfloat Light_Pos[] = { 0.0f, -20.0f, 80.0f, 0.0f };
-GLfloat Light_Dif[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-GLfloat Ambient[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-GLfloat Diffuse[] = { 0.6f, 0.6f, 0.6f, 1.0f };
-GLfloat Specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+// Definição dos tipos de iluminação
+GLfloat Light_Pos[] = {0.0f, -20.0f, 80.0f, 0.0f};
+GLfloat Light_Dif[] = {1.0f, 1.0f, 1.0f, 1.0f};
+GLfloat Ambient[] = {1.0f, 1.0f, 1.0f, 1.0f};
+GLfloat Diffuse[] = {0.6f, 0.6f, 0.6f, 1.0f};
+GLfloat Specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
 
-float Acceleration = 0.06f;
+float Acceleration = 0.03f;
 float Camera = 28.0f;
 float x, y, ax, ay, vx, vy;
-int i, j, j2, k, a, b, tmp;
-int DrtHon = -1, DrtVer = -1;
-char IsPressHon = 0, IsPressVer = 0;
-int OffsetAngle[] = { 2, -2 }, MaxOffsetAngle[] = { 30, -30 };
-char txt[30];
+int a, b;
+int direcaoHorizontal = -1, direcaoVertical = -1;
+char moveHorizontal = 0, moveVertical = 0;
+int anguloMinimo[] = {2, -2}, anguloMaximo[] = {30, -30};
 
-int Map[MAX][MAX] = {
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0 },
-    { 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0 },
-    { 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0 },
-    { 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0 },
-    { 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0 },
-    { 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
-};
+int labirinto[MAX][MAX] = {
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0},
+    {0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0},
+    {0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0},
+    {0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0},
+    {0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0},
+    {0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0},
+    {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0},
+    {0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0},
+    {0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 
-int Map2[MAX][MAX] = {
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
-};
-
-void Text_Bitmap(float x, float y, char* s)
+void loadLabirinto()
 {
-    glRasterPos2f(x, y);
-    while (*s != '\0')
-        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, *(s++));
-}
-
-void Reload_TableView()
-{
-   glMatrixMode(GL_PROJECTION);
+    // Cria nossa tabela de base para o labirinto
+    glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(60.0, 1.0, 1.0, 50.0);
     glTranslatef(0.0f, 0.0f, -Camera);
-    //gluLookAt(0.0, -1.0, 2.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
     glRotatef(-0.6f * a, 0.0f, 1.0f, 0.0f);
     glRotatef(0.6f * b - 30, 1.0f, 0.0f, 0.0f);
     glMatrixMode(GL_MODELVIEW);
-    ax = -Acceleration * sin(a * PI / 180);
-    ay = -Acceleration * sin(b * PI / 180);
+
+    // Acelera o movimento da bolinha no eixo x ou y
+    // usamos PI para suavizar o movimento considerando que ela se movimente em 180 graus
+    ax = -Acceleration * sin(a * 2.0f / 180);
+    ay = -Acceleration * sin(b * 2.0f / 180);
 }
 
-void Reload_TextView()
-{
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glMatrixMode(GL_MODELVIEW);
-}
-
-void Display()
+// Carrega os elementos
+void display()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    Reload_TableView();
+    loadLabirinto();
     glLoadIdentity();
-    glColor3fv(BGColor);
+    glColor3f(0.5f, 0.0f, 1.0f);
+
+    // Carrega nosso fundo do labirinto
     glBegin(GL_QUADS);
     glVertex2f(-12.0f, -12.0f);
     glVertex2f(12.0f, -12.0f);
     glVertex2f(12.0f, 12.0f);
     glVertex2f(-12.0f, 12.0f);
     glEnd();
+
+    // Carrega nossas paredes
     glEnable(GL_LIGHTING);
     glCallList(1);
     glLoadIdentity();
     glTranslatef(x, y, 0.5f);
     glutSolidSphere(0.5, 40, 40);
     glDisable(GL_LIGHTING);
-    Reload_TextView();
     glLoadIdentity();
     glColor3f(1.0f, 1.0f, 1.0f);
-    sprintf(txt, "Cam: %.1f  Q(-) W(+)", Camera);
-    Text_Bitmap(-0.9f, 0.9f, txt);
-    sprintf(txt, "Acc: %.2f  E(-) R(+)", Acceleration);
-    Text_Bitmap(-0.9f, 0.8f, txt);
     glutSwapBuffers();
 }
 
-void Init()
+// Inicializa a posição da bolinha e os cubos
+void init()
 {
-    glClearColor(0.710f, 0.325f, 0.494f, 1.000f);
+    glClearColor(0.0f, 0.0, 0.0, 0.0f);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHT0);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, Light_Dif);
@@ -155,96 +105,103 @@ void Init()
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, Diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, Specular);
     glMaterialf(GL_FRONT, GL_SHININESS, 90.0f);
+    // Cria nossa lista de exibição que são os cubos que formam as paredes
     glNewList(1, GL_COMPILE);
-    for (i = 0; i < MAX; i++) {
-        for (j = 0; j < MAX; j++) {
-            if (Map[i][j] == 0) {
+    for (int i = 0; i < MAX; i++)
+    {
+        for (int j = 0; j < MAX; j++)
+        {
+            if (labirinto[i][j] == 0)
+            {
                 glLoadIdentity();
+                // Desenha os cubos conforme os valores de i e j
+                // e a disposição da tabela de fundo
                 glTranslatef(-11.5f + j, -11.5f + i, 0.5f);
                 glutSolidCube(1.0);
             }
         }
     }
     glEndList();
-    x = 9.5f;
-    y = 10.0f;
-    vx = 0.0f;
-    vy = 0.0f;
-    a = 0;
-    b = 0;
-    ax = 0.0f;
-    ay = 0.0f;
+    // indica as posições que a bolinha deve estar no início
+    x = y = 10.0f;
 }
 
 void Timer(int value)
 {
+    int tmp, i, j, j2, k;
+    // Recebe a posição atual da bolinha
     vx += ax;
     vy += ay;
-    vx *= FRICTION_GROUND;
-    vy *= FRICTION_GROUND;
+    
+    // Caso a bolinha fique parada em uma parede no eixo x
     if (vx > 0) {
+        // Soma a posição de y em j
         j = (int)(y + 11.6f);
         j2 = (int)(y + 12.4f);
         k = (int)vx;
-        tmp = (int)(x + 43.5f) - 30; // (int)(x + 12 + 0.5 + 1.0) // 0.5 - Radius Ball 1.0 - Size Wall
+        tmp = (int)(x + 43.5f) - 30;
         for (i = 0; i < k; i++) {
-            if (!Map[j][tmp] || !Map[j2][tmp])
+            if (!labirinto[j][tmp] || !labirinto[j2][tmp])
                 break;
             tmp++;
         }
         if (i == k) {
             tmp = (int)(x + vx + 42.5f) - 30;
-            if (Map[j][tmp] && Map[j2][tmp])
+            if (labirinto[j][tmp] && labirinto[j2][tmp])
                 i++;
         }
         if (i > k) {
             x += vx;
-        } else {
+        }else {
             x = (int)(x + i + 25) - 24.5f;
-            vx *= -FRICTION_WALL;
+            // Permite que a bolinha se mova de forma suave conforme sua disposição
+            vx *= -FRICCAO_PAREDE;
         }
-    } else {
+    }
+    else {
         j = (int)(y + 11.6f);
         j2 = (int)(y + 12.4f);
         k = -(int)vx;
-        tmp = (int)(x + 40.5f) - 30; // (int)(x + 12 - 0.5 - 1.0)
+        tmp = (int)(x + 40.5f) - 30;
         for (i = 0; i < k; i++) {
-            if (!Map[j][tmp] || !Map[j2][tmp])
+            if (!labirinto[j][tmp] || !labirinto[j2][tmp])
                 break;
             tmp--;
         }
         if (i == k) {
             tmp = (int)(x + vx + 41.5f) - 30;
-            if (Map[j][tmp] && Map[j2][tmp])
+            if (labirinto[j][tmp] && labirinto[j2][tmp])
                 i++;
         }
         if (i > k) {
             x += vx;
         } else {
             x = (int)(x - i + 25) - 24.5f;
-            vx *= -FRICTION_WALL;
+            vx *= -FRICCAO_PAREDE;
         }
     }
+
+    // Caso a bolinha fique parada em uma parede no eixo y
     if (vy > 0) {
         j = (int)(x + 11.6f);
         j2 = (int)(x + 12.4f);
         k = (int)vy;
         tmp = (int)(y + 43.5f) - 30;
         for (i = 0; i < k; i++) {
-            if (!Map[tmp][j] || !Map[tmp][j2])
+            if (!labirinto[tmp][j] || !labirinto[tmp][j2])
                 break;
             tmp++;
         }
-        if (i == k) {
+        if (i == k){
             tmp = (int)(y + vy + 42.5f) - 30;
-            if (Map[tmp][j] && Map[tmp][j2])
+            if (labirinto[tmp][j] && labirinto[tmp][j2])
                 i++;
         }
         if (i > k)
             y += vy;
         else {
             y = (int)(y + i + 25) - 24.5f;
-            vy *= -FRICTION_WALL;
+            vy *= -FRICCAO_PAREDE;
         }
     } else {
         j = (int)(x + 11.6f);
@@ -252,130 +209,105 @@ void Timer(int value)
         k = -(int)vy;
         tmp = (int)(y + 40.5f) - 30;
         for (i = 0; i < k; i++) {
-            if (!Map[tmp][j] || !Map[tmp][j2])
+            if (!labirinto[tmp][j] || !labirinto[tmp][j2])
                 break;
             tmp--;
         }
         if (i == k) {
             tmp = (int)(y + vy + 41.5f) - 30;
-            if (Map[tmp][j] && Map[tmp][j2])
+            if (labirinto[tmp][j] && labirinto[tmp][j2])
                 i++;
         }
-        if (i > k)
+        if (i > k) {
             y += vy;
-        else {
+        } else {
             y = (int)(y - i + 25) - 24.5f;
-            vy *= -FRICTION_WALL;
+            vy *= -FRICCAO_PAREDE;
         }
     }
-    if (DrtHon > -1) {
+    // Faz o movimento da bolinha no eixo vertical ou horizontal em relação ao labirinto
+    if (direcaoHorizontal > -1) {
         if (a == 0) {
-            if (!IsPressHon)
-                DrtHon = -1;
+            if (!moveHorizontal)
+                direcaoHorizontal = -1;
             else
-                a += OffsetAngle[DrtHon];
-        } else if (a != MaxOffsetAngle[DrtHon])
-            a += OffsetAngle[DrtHon];
+                a += anguloMinimo[direcaoHorizontal];
+        } else if (a != anguloMaximo[direcaoHorizontal])
+            a += anguloMinimo[direcaoHorizontal];
     }
-    if (DrtVer > -1) {
+    if (direcaoVertical > -1) {
         if (b == 0) {
-            if (!IsPressVer)
-                DrtVer = -1;
+            if (!moveVertical)
+                direcaoVertical = -1;
             else
-                b += OffsetAngle[DrtVer];
-        } else if (b != MaxOffsetAngle[DrtVer])
-            b += OffsetAngle[DrtVer];
+                b += anguloMinimo[direcaoVertical];
+        }
+        else if (b != anguloMaximo[direcaoVertical])
+            b += anguloMinimo[direcaoVertical];
     }
     glutPostRedisplay();
+    // Suaviza o movimento da bolinha
     glutTimerFunc(25, Timer, 0);
 }
 
-void Special(int key, int x, int y)
+void teclas(int key, int x, int y)
 {
-    switch (key) {
+    switch (key)
+    {
     case GLUT_KEY_LEFT:
-        DrtHon = 0;
-        IsPressHon = 1;
+        direcaoHorizontal = 0;
+        moveHorizontal = 1;
         break;
     case GLUT_KEY_RIGHT:
-        DrtHon = 1;
-        IsPressHon = 1;
+        direcaoHorizontal = 1;
+        moveHorizontal = 1;
         break;
     case GLUT_KEY_DOWN:
-        DrtVer = 0;
-        IsPressVer = 1;
+        direcaoVertical = 0;
+        moveVertical = 1;
         break;
     case GLUT_KEY_UP:
-        DrtVer = 1;
-        IsPressVer = 1;
+        direcaoVertical = 1;
+        moveVertical = 1;
         break;
     }
 }
 
-void Special_Up(int key, int x, int y)
+// Faz a leitura da tecla
+void zoom(unsigned char key, int x, int y)
 {
-    switch (key) {
-    case GLUT_KEY_LEFT:
-        if (DrtHon == 0) {
-            DrtHon = 1;
-            IsPressHon = 0;
-        }
-        break;
-    case GLUT_KEY_RIGHT:
-        if (DrtHon == 1) {
-            DrtHon = 0;
-            IsPressHon = 0;
-        }
-        break;
-    case GLUT_KEY_DOWN:
-        if (DrtVer == 0) {
-            DrtVer = 1;
-            IsPressVer = 0;
-        }
-        break;
-    case GLUT_KEY_UP:
-        if (DrtVer == 1) {
-            DrtVer = 0;
-            IsPressVer = 0;
-        }
-        break;
-    }
-}
-
-void Keyboard(GLubyte key, int x, int y)
-{
-    switch (key) {
-    case 'q':
-        if (Camera > CAMERA_MIN)
+    if (key == 'q' || key == 'Q')
+    {
+        if (Camera > 24.0f)
             Camera -= 1.0f;
-        break;
-    case 'w':
-        if (Camera < CAMERA_MAX)
+    }
+    else if (key == 'w' || key == 'W')
+    {
+        if (Camera < 36.0f)
             Camera += 1.0f;
-        break;
-    case 'e':
-        if (Acceleration > ACCELERATION_MIN)
-            Acceleration -= 0.01f;
-        break;
-    case 'r':
-        if (Acceleration < ACCELERATION_MAX)
-            Acceleration += 0.01f;
-        break;
     }
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     glutInit(&argc, argv);
+
     glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
-    glutInitWindowSize(WIDTH, HEIGHT);
-    glutInitWindowPosition(POS_X, POS_Y);
-    glutCreateWindow("Labyrinth");
-    Init();
-    glutSpecialFunc(Special);
-    glutSpecialUpFunc(Special_Up);
-    glutKeyboardFunc(Keyboard);
+
+    // Demonstra que as paredes são compostas por cubos
+    // glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+
+    glutInitWindowSize(600, 600);
+    glutInitWindowPosition(350, 60);
+    glutCreateWindow("Labirinto");
+
+    // Desenha os cubos e desenha a bolinha
+    init();
+    glutSpecialFunc(teclas);
+    glutKeyboardFunc(zoom);
+
+    // Responsável pelo movimento do tabuleiro
     glutTimerFunc(0, Timer, 0);
-    glutDisplayFunc(Display);
+    glutDisplayFunc(display);
     glutMainLoop();
 }
